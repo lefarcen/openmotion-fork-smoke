@@ -199,5 +199,16 @@
     "preview": "assets/preview.webm",
     "poster": "assets/poster.jpg"
   },
-  "remoteAssets": []
+  "remoteAssets": [
+    {
+      "url": "https://releases.open-design.ai/open-motion/media/sha256/15f3c61b5bba8cafb3c6d21cdc06ca1846720f3946e0d01f9dc3f9114cded3a8.webm",
+      "bytes": 49629,
+      "sha256": "15f3c61b5bba8cafb3c6d21cdc06ca1846720f3946e0d01f9dc3f9114cded3a8",
+      "source": {
+        "path": "assets/preview.webm",
+        "bytes": 49629,
+        "sha256": "15f3c61b5bba8cafb3c6d21cdc06ca1846720f3946e0d01f9dc3f9114cded3a8"
+      }
+    }
+  ]
 }
