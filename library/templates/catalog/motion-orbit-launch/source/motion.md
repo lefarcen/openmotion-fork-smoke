@@ -38,7 +38,7 @@ Play the complete six seconds and inspect the first frame, reveal at 1.5 seconds
 
 ## Provenance and license
 
-Original repository contribution under Apache-2.0. No third-party audiovisual material is incorporated. The silent MP4 and JPEG poster derive from this HTML example; their exact identities are recorded in `manifest.json` and, after maintainer preparation, `template.json.remoteAssets`.
+Original repository contribution under Apache-2.0. No third-party audiovisual material is incorporated. The silent WebM rendition and JPEG poster derive from this HTML example; their exact identities are recorded in `manifest.json` and, after maintainer preparation, `template.json.remoteAssets`.
 
 ## Reference playback
 
