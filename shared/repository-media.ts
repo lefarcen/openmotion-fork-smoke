@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 
 export const mediaOrigin = 'https://releases.open-design.ai';
 export const mediaPrefix = 'open-motion/media/sha256/';
@@ -58,9 +59,20 @@ export async function boundedMediaBody(response: Response, limit: number): Promi
 
 export async function downloadMedia(file: MediaLock, fetcher: typeof fetch = fetch): Promise<Buffer> {
   validateMediaLock(file);
-  const response = await fetcher(file.url, { redirect: 'error', signal: AbortSignal.timeout(120_000) });
-  const bytes = await boundedMediaBody(response, file.bytes);
-  assert.equal(bytes.length, file.bytes, 'Media size mismatch');
-  assert.equal(mediaDigest(bytes), file.sha256, 'Media SHA-256 mismatch');
-  return bytes;
+  const transientCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'UND_ERR_SOCKET',
+    'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT', 'UND_ERR_RES_CONTENT_LENGTH_MISMATCH']);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await fetcher(file.url, { redirect: 'error', signal: AbortSignal.timeout(120_000) });
+      const bytes = await boundedMediaBody(response, file.bytes);
+      assert.equal(bytes.length, file.bytes, 'Media size mismatch');
+      assert.equal(mediaDigest(bytes), file.sha256, 'Media SHA-256 mismatch');
+      return bytes;
+    } catch (error) {
+      const interrupted = error instanceof Error && (error.name === 'TimeoutError' || transientCodes.has((error.cause as { code?: string })?.code ?? ''));
+      if (attempt === 2 || !interrupted)
+        throw new Error(`Media download failed for ${file.path}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+      await setTimeout(250 * (attempt + 1));
+    }
+  }
 }

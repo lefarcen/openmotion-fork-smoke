@@ -127,6 +127,37 @@ test('public writes are conditional, confined to the media prefix and verified b
   await assert.rejects(publishMedia(lock, f.bytes, { ...options, fetcher: (async () => new Response(new Uint8Array(Buffer.alloc(lock.bytes)), { status: 200 })) as typeof fetch }), /SHA-256 mismatch/);
 });
 
+test('interrupted media streams retry from a fresh response and retain exact-byte verification', async () => {
+  const bytes = Buffer.alloc(128, 42), sha256 = mediaDigest(bytes);
+  const lock: MediaLock = { path: 'docs/readme/retry.webm', bytes: bytes.length, sha256, url: mediaOrigin + '/' + mediaKey(sha256, 'retry.webm') };
+  let requests = 0;
+  const fetcher = (async () => {
+    if (++requests > 1) return new Response(new Uint8Array(bytes));
+    return new Response(new ReadableStream({
+      start(controller) { controller.enqueue(new Uint8Array(bytes.subarray(0, 8))); },
+      pull(controller) { controller.error(new TypeError('terminated', { cause: { code: 'UND_ERR_RES_CONTENT_LENGTH_MISMATCH' } })); },
+    }));
+  }) as typeof fetch;
+  assert.deepEqual(await downloadMedia(lock, fetcher), bytes);
+  assert.equal(requests, 2);
+  requests = 0;
+  await assert.rejects(downloadMedia(lock, (async () => {
+    requests++;
+    throw new TypeError('fetch failed', { cause: { code: 'ECONNRESET' } });
+  }) as typeof fetch), /docs\/readme\/retry.webm/);
+  assert.equal(requests, 3, 'An unavailable object cannot retry indefinitely');
+});
+
+test('media retries never accept or repeat HTTP failures, over-budget bodies or corrupt complete objects', async () => {
+  const bytes = Buffer.alloc(128, 42), sha256 = mediaDigest(bytes);
+  const lock: MediaLock = { path: 'docs/readme/retry.webm', bytes: bytes.length, sha256, url: mediaOrigin + '/' + mediaKey(sha256, 'retry.webm') };
+  for (const response of [new Response(null, { status: 404 }), new Response(new Uint8Array(129)), new Response(new Uint8Array(128))]) {
+    let requests = 0;
+    await assert.rejects(downloadMedia(lock, (async () => { requests++; return response; }) as typeof fetch));
+    assert.equal(requests, 1);
+  }
+});
+
 test('optional media pulls restore exact bytes, reuse valid files and reject corrupt bodies and symlinks', async t => {
   const directory = await isolated(t), bytes = Buffer.alloc(128, 42), sha256 = mediaDigest(bytes);
   const lock: MediaLock = { path: 'docs/readme/demo.mp4', bytes: bytes.length, sha256, url: mediaOrigin + '/' + mediaKey(sha256, 'demo.mp4') };
