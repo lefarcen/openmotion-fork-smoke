@@ -24,4 +24,4 @@ Original HTML, motion rules, geometric artwork and rendered preview were authore
 
 ## Verification scope
 
-The example exposes deterministic `window.orbitLaunch.seek(seconds)` playback for frame inspection. The supplied silent MP4 is rendered from that example; the poster uses its final hold. Technical playback and catalog/MCP checks do not establish human visual acceptance or native Studio export verification.
+The example exposes deterministic `window.orbitLaunch.seek(seconds)` playback for frame inspection. The supplied silent WebM is a 640 × 360 viewing rendition of the same six-second example; the authored canvas remains 960 × 540 and the poster uses its final hold. Technical playback and catalog/MCP checks do not establish human visual acceptance or native Studio export verification.
